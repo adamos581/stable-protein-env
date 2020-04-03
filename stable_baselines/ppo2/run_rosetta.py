@@ -1,0 +1,28 @@
+import gym
+
+from stable_baselines.common.cmd_util import make_rosetta_env
+from stable_baselines.common.policies import MlpPolicy
+from stable_baselines.common.vec_env import DummyVecEnv, VecFrameStack
+from stable_baselines import PPO2
+from pyrosetta import init, pose_from_pdb, pose_from_sequence
+from stable_baselines.common.policies import FeedForwardPolicy, register_policy
+from stable_baselines.ppo2.custom_policy import LstmCustomPolicy
+
+if __name__ == '__main__':
+
+    init()
+
+    seed = 0
+    # env = gym.make('gym_rosetta:protein-fold-v0')
+    # Optional: PPO2 requires a vectorized environment to run
+    # the env is now wrapped automatically when passing it to the constructor
+    env = make_rosetta_env("gym_rosetta:protein-fold-v0", 6, seed, use_subprocess=False)
+
+    model = PPO2(LstmCustomPolicy, env, verbose=1, tensorboard_log='./log', n_steps=64, ent_coef=0.01, noptepochs=1)
+    model.learn(total_timesteps=900000)
+
+    obs = env.reset()[0]
+    for i in range(100):
+        action, _states = model.predict(obs)
+        obs, rewards, dones, info = env.step(action)
+        env.render()

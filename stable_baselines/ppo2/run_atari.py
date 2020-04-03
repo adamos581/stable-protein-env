@@ -20,10 +20,10 @@ def train(env_id, num_timesteps, seed, policy,
         (i.e. batch size is n_steps * n_env where n_env is number of environment copies running in parallel)
     """
 
-    env = VecFrameStack(make_atari_env(env_id, n_envs, seed), 4)
+    env = make_atari_env(env_id, n_envs, seed)
     policy = {'cnn': CnnPolicy, 'lstm': CnnLstmPolicy, 'lnlstm': CnnLnLstmPolicy, 'mlp': MlpPolicy}[policy]
     model = PPO2(policy=policy, env=env, n_steps=n_steps, nminibatches=nminibatches,
-                 lam=0.95, gamma=0.99, noptepochs=4, ent_coef=.01,
+                 lam=0.95, gamma=0.99, noptepochs=10, ent_coef=.01,
                  learning_rate=lambda f: f * 2.5e-4, cliprange=lambda f: f * 0.1, verbose=1)
     model.learn(total_timesteps=num_timesteps)
 
