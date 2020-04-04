@@ -32,8 +32,9 @@ class LstmCustomPolicy(ActorCriticPolicy):
             net_arch = [dict(vf=layers, pi=layers)]
 
         with tf.variable_scope("model", reuse=reuse):
-
-            pi_latent, vf_latent = mlp_extractor(tf.layers.flatten(self.processed_obs), net_arch, act_fun)
+            embeded = tf.keras.layers.LSTM(64)(self.processed_obs[1])
+            with_energy = tf.concat(( self.processed_obs[2], tf.layers.flatten(self.processed_obs[0]), embeded), axis=-1)
+            pi_latent, vf_latent = mlp_extractor(with_energy, net_arch, act_fun)
 
             self._value_fn = linear(vf_latent, 'vf', 1)
 
@@ -43,16 +44,20 @@ class LstmCustomPolicy(ActorCriticPolicy):
         self._setup_init()
 
     def step(self, obs, state=None, mask=None, deterministic=False):
+
+        feed_dict = {x: obs[key] for (i, x), key in zip(enumerate(self.obs_ph), obs.keys())}
+
         if deterministic:
             action, value, neglogp = self.sess.run([self.deterministic_action, self.value_flat, self.neglogp],
-                                                   {self.obs_ph: obs})
+                                                   feed_dict)
         else:
             action, value, neglogp = self.sess.run([self.action, self.value_flat, self.neglogp],
-                                                   {self.obs_ph: obs})
+                                                   feed_dict)
         return action, value, self.initial_state, neglogp
 
     def proba_step(self, obs, state=None, mask=None):
         return self.sess.run(self.policy_proba, {self.obs_ph: obs})
 
     def value(self, obs, state=None, mask=None):
-        return self.sess.run(self.value_flat, {self.obs_ph: obs})
+        feed_dict = {x: obs[key] for (i, x), key in zip(enumerate(self.obs_ph), obs.keys())}
+        return self.sess.run(self.value_flat, feed_dict)

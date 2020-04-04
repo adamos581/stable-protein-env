@@ -16,9 +16,9 @@ if __name__ == '__main__':
     # env = gym.make('gym_rosetta:protein-fold-v0')
     # Optional: PPO2 requires a vectorized environment to run
     # the env is now wrapped automatically when passing it to the constructor
-    env = make_rosetta_env("gym_rosetta:protein-fold-v0", 6, seed, use_subprocess=False)
+    env = make_rosetta_env("gym_rosetta:protein-fold-v0", 8, seed, use_subprocess=False)
 
-    model = PPO2(LstmCustomPolicy, env, verbose=1, tensorboard_log='./log', n_steps=64, ent_coef=0.01, noptepochs=1)
+    model = PPO2(LstmCustomPolicy, env, verbose=1, tensorboard_log='./log', n_steps=128, ent_coef=0.001, noptepochs=5, nminibatches=4)
     model.learn(total_timesteps=900000)
 
     obs = env.reset()[0]

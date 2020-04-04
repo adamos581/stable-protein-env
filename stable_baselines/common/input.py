@@ -48,7 +48,7 @@ def observation_input(ob_space, batch_size=None, name='Ob', scale=False):
     elif isinstance(ob_space, Dict):
         observation_ph_array = []
         processed_observations = []
-        for key in ob_space.keys():
+        for key in ob_space.spaces.keys():
             observation_ph, processed_observation = observation_input(ob_space[key], batch_size, name + '_'+key, scale)
             observation_ph_array.append(observation_ph)
             processed_observations.append(processed_observation)
