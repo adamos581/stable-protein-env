@@ -32,8 +32,8 @@ class LstmCustomPolicy(ActorCriticPolicy):
             net_arch = [dict(vf=layers, pi=layers)]
 
         with tf.variable_scope("model", reuse=reuse):
-            embeded = tf.keras.layers.LSTM(64)(self.processed_obs[1])
-            with_energy = tf.concat(( self.processed_obs[2], tf.layers.flatten(self.processed_obs[0]), embeded), axis=-1)
+            # embeded = tf.keras.layers.LSTM(64)(self.processed_obs[1])
+            with_energy = tf.concat(( tf.layers.flatten(self.processed_obs[2]), tf.layers.flatten(self.processed_obs[0]), self.processed_obs[3]), axis=-1)
             pi_latent, vf_latent = mlp_extractor(with_energy, net_arch, act_fun)
 
             self._value_fn = linear(vf_latent, 'vf', 1)

@@ -46,6 +46,8 @@ class ProteinFoldEnv(gym.Env, utils.EzPickle):
             "energy": spaces.Box(low=np.array([-np.inf]), high=np.array([np.inf]), dtype=np.float32),
             "backbone": spaces.Box(low=-180, high=180, shape=(MAX_LENGTH, 3)),
             "amino_acids": spaces.Box(low=0, high=1, shape=(MAX_LENGTH, len(RESIDUE_LETTERS))),
+            "backbone_current": spaces.Box(low=-180, high=180, shape=(MAX_LENGTH, 3)),
+
         })
         self.action_space = spaces.MultiDiscrete([64, 3, 8])
         # self.action_space = spaces.Dict({
@@ -143,7 +145,7 @@ class ProteinFoldEnv(gym.Env, utils.EzPickle):
             # if distance < 3.0:
             #     reward += 1
             self.best_distance = distance
-            print("best distance: {} {}".format(self.start_distance, self.name))
+            print("best distance: {} {}".format(self.best_distance, self.name))
 
         self.prev_ca_rmsd = distance
         if distance < self.start_distance * 0.1:
@@ -152,7 +154,7 @@ class ProteinFoldEnv(gym.Env, utils.EzPickle):
             if self.achieved_goal_counter > 25:
                 done = True
 
-        if self.move_counter >= 512:
+        if self.move_counter >= 256:
             reward -= 10
             done = True
 
@@ -195,18 +197,32 @@ class ProteinFoldEnv(gym.Env, utils.EzPickle):
         psis = np.divide([self.target_protein_pose.psi(i + 1) - self.protein_pose.psi(i + 1) for i in range(self.protein_pose.total_residue())], 180.0)
         omegas = np.divide([self.target_protein_pose.omega(i + 1) - self.protein_pose.omega(i + 1) for i in range(self.protein_pose.total_residue())], 180.0)
         phis = np.divide([self.target_protein_pose.phi(i + 1) - self.protein_pose.phi(i + 1) for i in range(self.protein_pose.total_residue())], 180)
+
+        psis_current = np.divide([self.protein_pose.psi(i + 1) for i in
+                                  range(self.protein_pose.total_residue())], 180.0)
+        omegas_current = np.divide([self.protein_pose.omega(i + 1) for i in
+                                    range(self.protein_pose.total_residue())], 180.0)
+        phis_current = np.divide([self.protein_pose.phi(i + 1) for i in
+                                  range(self.protein_pose.total_residue())], 180)
         rest_zeros = MAX_LENGTH - len(self.target_protein_pose.sequence())
         psis = np.concatenate((psis, np.zeros(rest_zeros)))
         omegas = np.concatenate((omegas, np.zeros(rest_zeros)))
         phis = np.concatenate((phis, np.zeros(rest_zeros)))
+        psis_current = np.concatenate((psis_current, np.zeros(rest_zeros)))
+        omegas_current = np.concatenate((omegas_current, np.zeros(rest_zeros)))
+        phis_current = np.concatenate((phis_current, np.zeros(rest_zeros)))
 
         backbone_geometry = [list(a) for a in zip(psis, omegas, phis)]
+        backbone_geometry_current = [list(a) for a in zip(psis_current, omegas_current, phis_current)]
+
         a = self.difference_energy()
         # return backbone_geometry
         return {
             "backbone": backbone_geometry,
             "amino_acids": self.encoded_residue_sequence,
             "energy": [self.difference_energy()],
+            "backbone_current": backbone_geometry_current,
+
         }
 
     def set_validation_mode(self, is_valid):
